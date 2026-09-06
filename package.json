@@ -1,0 +1,12 @@
+{
+  "name": "sistema-convites-casamento",
+  "version": "2.0.0",
+  "description": "Convites digitais com QR Code e painel administrativo",
+  "main": "server.js",
+  "scripts": {"start": "node server.js"},
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4"
+  }
+}

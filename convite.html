@@ -1,0 +1,21 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Validação do Convite</title><link rel="stylesheet" href="/style.css"></head><body>
+<header><h1>Vidário António & Lucélia Moma</h1><div class="sub">Casamento • 30 de Outubro de 2026</div></header>
+<main style="max-width:700px"><div class="card center" id="resultado"><h2>A validar convite...</h2></div></main>
+<script>
+const codigo=new URLSearchParams(location.search).get("codigo");
+async function load(){
+ const el=document.getElementById("resultado");
+ if(!codigo){el.innerHTML="<h1>⚠️ CONVITE INVÁLIDO</h1>";return}
+ const r=await fetch("/api/convite/"+encodeURIComponent(codigo));
+ if(!r.ok){el.innerHTML="<h1>⚠️ CONVITE INVÁLIDO</h1><p>Este código não pertence a um convite oficial.</p>";return}
+ const x=await r.json(), used=x.estado==="Utilizado";
+ el.innerHTML=`<h1>${used?"⚠️ CONVITE JÁ UTILIZADO":"✅ CONVITE VÁLIDO"}</h1>
+ <p class="${used?"used":"valid"}" style="font-size:20px">${used?"Este convite já foi registado na entrada.":"Este é um convite oficial."}</p>
+ <hr><p><b>Convidado:</b> ${x.nome}</p>
+ <p><b>Evento:</b> Casamento de Vidário António e Lucélia Moma</p>
+ <p><b>Data:</b> 30 de Outubro de 2026</p>
+ <p><b>Pessoas autorizadas:</b> ${x.pessoas}</p>
+ <p><b>Código:</b> ${x.codigo}</p>
+ <p><b>Estado:</b> ${x.estado}</p>${x.usado_em?`<p><b>Utilizado em:</b> ${x.usado_em}</p>`:""}`;
+}load();
+</script></body></html>
