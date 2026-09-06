@@ -1,1 +1,906 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
+<title>Controlo de Entrada</title>
+
+<link rel="stylesheet" href="/style.css">
+
+<style>
+
+.resultado{
+    display:none;
+    margin-top:20px;
+}
+
+.resultado.show{
+    display:block;
+}
+
+.info{
+    padding:12px;
+    margin:8px 0;
+    border-radius:6px;
+    background:#f4f4f4;
+}
+
+.info strong{
+    display:inline-block;
+    min-width:170px;
+}
+
+.sucesso{
+    margin-top:15px;
+    padding:15px;
+    border-radius:6px;
+    font-weight:bold;
+}
+
+.erro{
+    margin-top:15px;
+    padding:15px;
+    border-radius:6px;
+    font-weight:bold;
+}
+
+#camera{
+    width:100%;
+    max-width:500px;
+    margin-top:15px;
+    border-radius:8px;
+}
+
+.botoes{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:15px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+    <h1>Controlo de Entrada</h1>
+
+    <div class="sub">
+        Casamento de Vidário António & Lucélia Moma
+    </div>
+
+</header>
+
+
+<main>
+
+
+<!-- LOGIN -->
+
+<div class="card" id="login">
+
+    <h2>Acesso ao Controlo de Entrada</h2>
+
+    <input
+        id="senha"
+        type="password"
+        placeholder="Digite a senha de entrada"
+    >
+
+    <button onclick="entrar()">
+        Entrar
+    </button>
+
+    <p id="erroLogin" class="used"></p>
+
+</div>
+
+
+<!-- APLICAÇÃO -->
+
+<div id="app" style="display:none">
+
+
+<div class="card">
+
+    <h2>Consultar Convidado</h2>
+
+    <p>
+        Digite o código do convite ou utilize a câmara para ler o QR Code.
+    </p>
+
+
+    <div class="formgrid">
+
+        <label>
+
+            Código do convite
+
+            <input
+                id="codigo"
+                placeholder="Exemplo: VL2026-001"
+                onkeydown="if(event.key==='Enter')consultar()"
+            >
+
+        </label>
+
+
+        <button onclick="consultar()">
+            Consultar
+        </button>
+
+    </div>
+
+
+    <div class="botoes">
+
+        <button
+            class="secondary"
+            onclick="abrirCamera()"
+        >
+            Abrir Câmara
+        </button>
+
+
+        <button
+            class="secondary"
+            onclick="fecharCamera()"
+        >
+            Fechar Câmara
+        </button>
+
+    </div>
+
+
+    <div id="camArea" style="display:none">
+
+        <video
+            id="camera"
+            autoplay
+            playsinline
+        ></video>
+
+        <p id="camMsg"></p>
+
+    </div>
+
+
+    <!-- RESULTADO -->
+
+    <div
+        id="resultado"
+        class="resultado"
+    >
+
+        <h2>Informações do Convite</h2>
+
+
+        <div class="info">
+
+            <strong>Código:</strong>
+
+            <span id="rCodigo"></span>
+
+        </div>
+
+
+        <div class="info">
+
+            <strong>Nome:</strong>
+
+            <span id="rNome"></span>
+
+        </div>
+
+
+        <div class="info">
+
+            <strong>Pessoas autorizadas:</strong>
+
+            <span id="rPessoas"></span>
+
+        </div>
+
+
+        <div class="info">
+
+            <strong>Estado:</strong>
+
+            <span id="rEstado"></span>
+
+        </div>
+
+
+        <div
+            class="info"
+            id="linhaData"
+            style="display:none"
+        >
+
+            <strong>Data/Hora da entrada:</strong>
+
+            <span id="rData"></span>
+
+        </div>
+
+
+        <button
+            id="btnConfirmar"
+            class="green"
+            onclick="confirmarEntrada()"
+        >
+
+            Confirmar Entrada
+
+        </button>
+
+
+        <div
+            id="mensagem"
+        ></div>
+
+
+    </div>
+
+</div>
+
+
+</div>
+
+</main>
+
+
+<script>
+
+
+/* =========================================
+   VARIÁVEIS
+========================================= */
+
+let senha = "";
+
+let convidadoAtual = null;
+
+let stream = null;
+
+let scanTimer = null;
+
+
+/* =========================================
+   AUTENTICAÇÃO
+========================================= */
+
+function auth(){
+
+    return {
+
+        Authorization:
+
+            "Basic " +
+
+            btoa(
+                "entrada:" + senha
+            ),
+
+        "Content-Type":
+
+            "application/json"
+
+    };
+
+}
+
+
+/* =========================================
+   LOGIN
+========================================= */
+
+async function entrar(){
+
+    senha =
+
+        document
+        .getElementById("senha")
+        .value;
+
+
+    let r =
+
+        await fetch(
+
+            "/api/entrada/test",
+
+            {
+                headers:auth()
+            }
+
+        );
+
+
+    if(!r.ok){
+
+        document
+        .getElementById("erroLogin")
+        .textContent =
+
+            "Senha inválida.";
+
+        return;
+
+    }
+
+
+    document
+    .getElementById("login")
+    .style.display =
+
+        "none";
+
+
+    document
+    .getElementById("app")
+    .style.display =
+
+        "block";
+
+}
+
+
+/* =========================================
+   API
+========================================= */
+
+async function api(
+    url,
+    opt={}
+){
+
+    opt.headers = {
+
+        ...auth(),
+
+        ...(opt.headers || {})
+
+    };
+
+
+    return fetch(
+        url,
+        opt
+    );
+
+}
+
+
+/* =========================================
+   CONSULTAR
+========================================= */
+
+async function consultar(){
+
+    limparMensagem();
+
+
+    const codigo =
+
+        document
+        .getElementById("codigo")
+        .value
+        .trim()
+        .toUpperCase();
+
+
+    if(!codigo){
+
+        mostrarErro(
+            "Digite o código do convite."
+        );
+
+        return;
+
+    }
+
+
+    const r =
+
+        await api(
+
+            "/api/entrada/consultar/" +
+
+            encodeURIComponent(codigo)
+
+        );
+
+
+    const j =
+        await r.json();
+
+
+    if(!r.ok){
+
+        document
+        .getElementById("resultado")
+        .classList
+        .remove("show");
+
+
+        mostrarErro(
+            j.erro ||
+            "Convite não encontrado."
+        );
+
+        return;
+
+    }
+
+
+    convidadoAtual = j;
+
+
+    mostrarConvidado(j);
+
+}
+
+
+/* =========================================
+   MOSTRAR CONVIDADO
+========================================= */
+
+function mostrarConvidado(x){
+
+    document
+    .getElementById("resultado")
+    .classList
+    .add("show");
+
+
+    document
+    .getElementById("rCodigo")
+    .textContent =
+
+        x.codigo;
+
+
+    document
+    .getElementById("rNome")
+    .textContent =
+
+        x.nome;
+
+
+    document
+    .getElementById("rPessoas")
+    .textContent =
+
+        x.pessoas;
+
+
+    document
+    .getElementById("rEstado")
+    .textContent =
+
+        x.estado;
+
+
+    const linhaData =
+
+        document
+        .getElementById("linhaData");
+
+
+    if(x.usado_em){
+
+        linhaData.style.display =
+            "block";
+
+
+        document
+        .getElementById("rData")
+        .textContent =
+            x.usado_em;
+
+    }
+
+    else{
+
+        linhaData.style.display =
+            "none";
+
+    }
+
+
+    const botao =
+
+        document
+        .getElementById("btnConfirmar");
+
+
+    if(
+        x.estado === "Utilizado"
+    ){
+
+        botao.style.display =
+            "none";
+
+
+        mostrarErro(
+            "Este convite já foi utilizado."
+        );
+
+    }
+
+    else{
+
+        botao.style.display =
+            "inline-block";
+
+    }
+
+}
+
+
+/* =========================================
+   CONFIRMAR ENTRADA
+========================================= */
+
+async function confirmarEntrada(){
+
+    if(!convidadoAtual){
+
+        mostrarErro(
+            "Consulte primeiro um convite."
+        );
+
+        return;
+
+    }
+
+
+    const confirmar =
+
+        confirm(
+
+            "Confirmar entrada de " +
+
+            convidadoAtual.nome +
+
+            " para " +
+
+            convidadoAtual.pessoas +
+
+            " pessoa(s)?"
+
+        );
+
+
+    if(!confirmar)
+        return;
+
+
+    const r =
+
+        await api(
+
+            "/api/entrada/confirmar/" +
+
+            encodeURIComponent(
+                convidadoAtual.codigo
+            ),
+
+            {
+                method:"POST"
+            }
+
+        );
+
+
+    const j =
+        await r.json();
+
+
+    if(!r.ok){
+
+        mostrarErro(
+            j.erro ||
+            "Não foi possível confirmar a entrada."
+        );
+
+        return;
+
+    }
+
+
+    convidadoAtual =
+        j.convidado;
+
+
+    mostrarConvidado(
+        convidadoAtual
+    );
+
+
+    mostrarSucesso(
+        "Entrada confirmada com sucesso."
+    );
+
+
+    document
+    .getElementById("codigo")
+    .value = "";
+
+}
+
+
+/* =========================================
+   MENSAGENS
+========================================= */
+
+function limparMensagem(){
+
+    document
+    .getElementById("mensagem")
+    .innerHTML = "";
+
+}
+
+
+function mostrarErro(texto){
+
+    document
+    .getElementById("mensagem")
+    .innerHTML =
+
+        `<div class="erro">
+
+            ${texto}
+
+        </div>`;
+
+}
+
+
+function mostrarSucesso(texto){
+
+    document
+    .getElementById("mensagem")
+    .innerHTML =
+
+        `<div class="sucesso">
+
+            ${texto}
+
+        </div>`;
+
+}
+
+
+/* =========================================
+   CÂMARA
+========================================= */
+
+async function abrirCamera(){
+
+    const camArea =
+
+        document
+        .getElementById("camArea");
+
+
+    const camMsg =
+
+        document
+        .getElementById("camMsg");
+
+
+    camArea.style.display =
+        "block";
+
+
+    camMsg.textContent =
+        "";
+
+
+    if(
+
+        !navigator.mediaDevices ||
+
+        !window.BarcodeDetector
+
+    ){
+
+        camMsg.textContent =
+
+            "O seu navegador não suporta leitura automática de QR Code. Digite o código manualmente.";
+
+        return;
+
+    }
+
+
+    try{
+
+        stream =
+
+            await navigator
+            .mediaDevices
+            .getUserMedia({
+
+                video:{
+
+                    facingMode:
+                        "environment"
+
+                }
+
+            });
+
+
+        document
+        .getElementById("camera")
+        .srcObject =
+
+            stream;
+
+
+        const detector =
+
+            new BarcodeDetector({
+
+                formats:[
+                    "qr_code"
+                ]
+
+            });
+
+
+        scanTimer =
+
+            setInterval(
+
+                async() => {
+
+                    try{
+
+                        const codes =
+
+                            await detector
+                            .detect(
+
+                                document
+                                .getElementById(
+                                    "camera"
+                                )
+
+                            );
+
+
+                        if(
+                            codes.length
+                        ){
+
+                            const raw =
+
+                                codes[0]
+                                .rawValue;
+
+
+                            let codigo =
+                                raw;
+
+
+                            try{
+
+                                const url =
+
+                                    new URL(
+
+                                        raw,
+
+                                        location.origin
+
+                                    );
+
+
+                                codigo =
+
+                                    url
+                                    .searchParams
+                                    .get(
+                                        "codigo"
+                                    )
+
+                                    ||
+
+                                    raw;
+
+                            }
+
+                            catch(e){}
+
+
+                            fecharCamera();
+
+
+                            document
+                            .getElementById("codigo")
+                            .value =
+
+                                codigo;
+
+
+                            consultar();
+
+                        }
+
+                    }
+
+                    catch(e){}
+
+                },
+
+                700
+
+            );
+
+    }
+
+    catch(e){
+
+        camMsg.textContent =
+
+            "Não foi possível abrir a câmara. Verifique as permissões.";
+
+    }
+
+}
+
+
+/* =========================================
+   FECHAR CÂMARA
+========================================= */
+
+function fecharCamera(){
+
+    if(scanTimer){
+
+        clearInterval(
+            scanTimer
+        );
+
+        scanTimer =
+            null;
+
+    }
+
+
+    if(stream){
+
+        stream
+        .getTracks()
+        .forEach(
+            t => t.stop()
+        );
+
+
+        stream =
+            null;
+
+    }
+
+
+    document
+    .getElementById("camArea")
+    .style.display =
+        "none";
+
+}
+
+
+</script>
+
+</body>
+</html>
