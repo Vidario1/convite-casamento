@@ -16,168 +16,137 @@ const ADMIN_PASSWORD =
     "CASAMENTO2026";
 
 
-// =========================================
-// POSTGRESQL
-// =========================================
+/* =========================================
+POSTGRESQL
+========================================= */
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
+
+    ssl:
+        process.env.DATABASE_URL
+            ? { rejectUnauthorized: false }
+            : false
 });
 
 
-// =========================================
-// MIDDLEWARE
-// =========================================
-
-app.use(express.json());
-
-app.use(
-    express.static(
-        path.join(__dirname, "public")
-    )
-);
-
-
-// =========================================
-// INICIALIZAR BASE DE DADOS
-// =========================================
+/* =========================================
+CRIAR TABELA
+========================================= */
 
 async function iniciarBaseDados() {
 
-    await pool.query(`
+    try {
 
-        CREATE TABLE IF NOT EXISTS convidados (
+        await pool.query(`
 
-            id SERIAL PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS convidados (
 
-            codigo TEXT UNIQUE NOT NULL,
+                id SERIAL PRIMARY KEY,
 
-            nome TEXT NOT NULL,
+                codigo TEXT UNIQUE NOT NULL,
 
-            pessoas INTEGER NOT NULL DEFAULT 1,
+                nome TEXT NOT NULL,
 
-            estado TEXT NOT NULL
-            DEFAULT 'Não utilizado',
+                pessoas INTEGER NOT NULL DEFAULT 1,
 
-            usado_em TEXT,
+                estado TEXT NOT NULL
+                DEFAULT 'Não utilizado',
 
-            criado_em TIMESTAMP
-            DEFAULT CURRENT_TIMESTAMP
+                usado_em TEXT,
 
-        )
+                criado_em TIMESTAMP
+                DEFAULT CURRENT_TIMESTAMP
 
-    `);
+            )
 
-
-    // CONVIDADO DE TESTE
-
-    const existe =
-        await pool.query(
-
-            `
-            SELECT codigo
-            FROM convidados
-            WHERE codigo = $1
-            `,
-
-            ["VL2026-001"]
-
-        );
-
-
-    if (existe.rows.length === 0) {
-
-        await pool.query(
-
-            `
-            INSERT INTO convidados
-            (codigo, nome, pessoas)
-
-            VALUES ($1, $2, $3)
-            `,
-
-            [
-                "VL2026-001",
-                "Valdemiro e Esposa",
-                2
-            ]
-
-        );
+        `);
 
         console.log(
-            "Convidado inicial criado."
+            "Base de dados ligada com sucesso."
         );
 
     }
 
+    catch (erro) {
 
-    console.log(
-        "PostgreSQL ligado com sucesso."
-    );
+        console.error(
+            "Erro ao iniciar a base de dados:",
+            erro
+        );
+
+    }
 
 }
 
 
-// =========================================
-// AUTENTICAÇÃO
-// =========================================
+/* =========================================
+MIDDLEWARE
+========================================= */
 
-function auth(req, res, next) {
+app.use(
+    express.json()
+);
+
+
+app.use(
+    express.static(
+        path.join(
+            __dirname,
+            "public"
+        )
+    )
+);
+
+
+/* =========================================
+AUTENTICAÇÃO
+========================================= */
+
+function auth(
+    req,
+    res,
+    next
+) {
 
     const h =
-        req.headers.authorization || "";
+        req.headers.authorization ||
+        "";
 
 
-    if (!h.startsWith("Basic ")) {
+    if(
+        !h.startsWith(
+            "Basic "
+        )
+    ) {
 
         res.set(
             "WWW-Authenticate",
-            'Basic realm="Organizacao"'
+            'Basic realm="Organização"'
         );
 
-
         return res
-            .status(401)
-            .json({
+        .status(401)
+        .json({
 
-                erro:
-                    "Autenticação necessária."
+            erro:
+                "Autenticação necessária."
 
-            });
-
-    }
-
-
-    let dados;
-
-
-    try {
-
-        dados =
-            Buffer
-            .from(
-                h.slice(6),
-                "base64"
-            )
-            .toString();
+        });
 
     }
 
-    catch (e) {
 
-        return res
-            .status(401)
-            .json({
+    const dados =
+        Buffer
+        .from(
 
-                erro:
-                    "Autenticação inválida."
+            h.slice(6),
 
-            });
+            "base64"
 
-    }
+        )
+        .toString();
 
 
     const partes =
@@ -188,18 +157,19 @@ function auth(req, res, next) {
         partes.slice(1).join(":");
 
 
-    if (
-        senha !== ADMIN_PASSWORD
+    if(
+        senha !==
+        ADMIN_PASSWORD
     ) {
 
         return res
-            .status(401)
-            .json({
+        .status(401)
+        .json({
 
-                erro:
-                    "Senha inválida."
+            erro:
+                "Senha inválida."
 
-            });
+        });
 
     }
 
@@ -209,28 +179,27 @@ function auth(req, res, next) {
 }
 
 
-// =========================================
-// CONSULTA PÚBLICA
-// =========================================
+/* =========================================
+CONSULTA PÚBLICA DO CONVITE
+========================================= */
 
 app.get(
     "/api/convite/:codigo",
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
-
-            const codigo =
-                req.params.codigo
-                .trim()
-                .toUpperCase();
-
 
             const resultado =
                 await pool.query(
 
                     `
+
                     SELECT
+
                         codigo,
                         nome,
                         pessoas,
@@ -239,26 +208,32 @@ app.get(
 
                     FROM convidados
 
-                    WHERE codigo = $1
+                    WHERE UPPER(codigo) =
+                    UPPER($1)
+
                     `,
 
-                    [codigo]
+                    [
+
+                        req.params.codigo
+
+                    ]
 
                 );
 
 
-            if (
+            if(
                 resultado.rows.length === 0
             ) {
 
                 return res
-                    .status(404)
-                    .json({
+                .status(404)
+                .json({
 
-                        erro:
-                            "Convite inválido."
+                    erro:
+                        "Convite não encontrado."
 
-                    });
+                });
 
             }
 
@@ -269,76 +244,92 @@ app.get(
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao consultar convite."
+                erro:
+                    "Erro ao consultar o convite."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// GERAR QR CODE
-// =========================================
+/* =========================================
+GERAR QR CODE
+========================================= */
 
 app.get(
     "/qr/:codigo",
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
-
-            const codigo =
-                req.params.codigo
-                .trim()
-                .toUpperCase();
-
 
             const resultado =
                 await pool.query(
 
                     `
+
                     SELECT codigo
+
                     FROM convidados
-                    WHERE codigo = $1
+
+                    WHERE UPPER(codigo) =
+                    UPPER($1)
+
                     `,
 
-                    [codigo]
+                    [
+
+                        req.params.codigo
+
+                    ]
 
                 );
 
 
-            if (
+            if(
                 resultado.rows.length === 0
             ) {
 
                 return res
-                    .status(404)
-                    .send(
-                        "Convite não encontrado."
-                    );
+                .status(404)
+                .send(
+                    "Convite não encontrado."
+                );
 
             }
 
 
+            const codigo =
+                resultado
+                .rows[0]
+                .codigo;
+
+
             const url =
-                `${BASE_URL}/convite.html?codigo=` +
-                encodeURIComponent(codigo);
+
+                `${BASE_URL}/convite.html?codigo=${encodeURIComponent(codigo)}`;
 
 
-            const imagem =
+            const qr =
                 await QRCode.toBuffer(
 
                     url,
@@ -349,7 +340,8 @@ app.get(
 
                         margin: 2,
 
-                        errorCorrectionLevel: "H"
+                        errorCorrectionLevel:
+                            "H"
 
                     }
 
@@ -357,38 +349,45 @@ app.get(
 
 
             res
-                .type("png")
-                .send(imagem);
+            .type("png")
+            .send(qr);
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .send(
-                    "Erro ao gerar QR Code."
-                );
+            .status(500)
+            .send(
+                "Erro ao gerar QR Code."
+            );
 
         }
 
     }
-
 );
 
 
-// =========================================
-// TESTE ADMIN
-// =========================================
+/* =========================================
+TESTE ADMIN
+========================================= */
 
 app.get(
     "/api/admin/test",
 
     auth,
 
-    (req, res) => {
+    (
+        req,
+        res
+    ) => {
 
         res.json({
 
@@ -397,118 +396,179 @@ app.get(
         });
 
     }
-
 );
 
 
-// =========================================
-// RESUMO ADMIN
-// =========================================
+/* =========================================
+RESUMO ADMIN
+========================================= */
 
 app.get(
     "/api/admin/resumo",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
-            const totalResultado =
-                await pool.query(
+            const resultado =
+                await pool.query(`
 
-                    `
-                    SELECT COUNT(*) AS total
+                    SELECT
+
+                        COUNT(*) AS total,
+
+                        COALESCE(
+                            SUM(pessoas),
+                            0
+                        )
+                        AS pessoas_autorizadas,
+
+                        COUNT(*)
+                        FILTER (
+
+                            WHERE estado =
+                            'Utilizado'
+
+                        )
+                        AS usados,
+
+                        COALESCE(
+
+                            SUM(pessoas)
+                            FILTER (
+
+                                WHERE estado =
+                                'Utilizado'
+
+                            ),
+
+                            0
+
+                        )
+                        AS pessoas_entraram
+
                     FROM convidados
-                    `
 
-                );
+                `);
 
 
-            const usadosResultado =
-                await pool.query(
-
-                    `
-                    SELECT COUNT(*) AS usados
-                    FROM convidados
-                    WHERE estado = 'Utilizado'
-                    `
-
-                );
+            const dados =
+                resultado.rows[0];
 
 
             const total =
                 Number(
-                    totalResultado
-                    .rows[0]
-                    .total
+                    dados.total
+                );
+
+
+            const pessoasAutorizadas =
+                Number(
+                    dados.pessoas_autorizadas
                 );
 
 
             const usados =
                 Number(
-                    usadosResultado
-                    .rows[0]
-                    .usados
+                    dados.usados
+                );
+
+
+            const pessoasEntraram =
+                Number(
+                    dados.pessoas_entraram
                 );
 
 
             res.json({
 
-                total,
+                total:
+                    total,
 
-                usados,
+
+                pessoas_autorizadas:
+                    pessoasAutorizadas,
+
+
+                usados:
+                    usados,
+
+
+                pessoas_entraram:
+                    pessoasEntraram,
+
 
                 nao_utilizados:
-                    total - usados
+                    total -
+                    usados,
+
+
+                pessoas_pendentes:
+
+                    pessoasAutorizadas -
+
+                    pessoasEntraram
 
             });
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                "Erro no resumo:",
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao consultar resumo."
+                erro:
+                    "Erro ao carregar o resumo."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// LISTAR CONVIDADOS
-// =========================================
+/* =========================================
+LISTAR CONVIDADOS ADMIN
+========================================= */
 
 app.get(
     "/api/admin/convidados",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
             const resultado =
-                await pool.query(
+                await pool.query(`
 
-                    `
                     SELECT *
-                    FROM convidados
-                    ORDER BY id DESC
-                    `
 
-                );
+                    FROM convidados
+
+                    ORDER BY id DESC
+
+                `);
 
 
             res.json(
@@ -517,78 +577,98 @@ app.get(
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao listar convidados."
+                erro:
+                    "Erro ao carregar convidados."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// ADICIONAR CONVIDADO
-// =========================================
+/* =========================================
+ADICIONAR CONVIDADO
+========================================= */
 
 app.post(
     "/api/admin/convidados",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
             let {
+
                 codigo,
                 nome,
                 pessoas
+
             } = req.body;
 
 
             codigo =
-                (codigo || "")
+                (
+                    codigo ||
+                    ""
+                )
                 .trim()
                 .toUpperCase();
 
 
             nome =
-                (nome || "")
+                (
+                    nome ||
+                    ""
+                )
                 .trim();
 
 
             pessoas =
                 Number(
-                    pessoas || 1
+                    pessoas ||
+                    1
                 );
 
 
-            if (
+            if(
+
                 !codigo ||
+
                 !nome ||
+
                 pessoas < 1
+
             ) {
 
                 return res
-                    .status(400)
-                    .json({
+                .status(400)
+                .json({
 
-                        erro:
+                    erro:
 
-                            "Preencha código, nome e número de pessoas."
+                        "Preencha código, nome e número de pessoas."
 
-                    });
+                });
 
             }
 
@@ -596,16 +676,31 @@ app.post(
             await pool.query(
 
                 `
-                INSERT INTO convidados
-                (codigo, nome, pessoas)
 
-                VALUES ($1, $2, $3)
-                `,
+                INSERT INTO convidados (
 
-                [
                     codigo,
                     nome,
                     pessoas
+
+                )
+
+                VALUES (
+
+                    $1,
+                    $2,
+                    $3
+
+                )
+
+                `,
+
+                [
+
+                    codigo,
+                    nome,
+                    pessoas
+
                 ]
 
             );
@@ -619,59 +714,69 @@ app.post(
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
 
 
-            if (
-                e.code === "23505"
+            if(
+                erro.code ===
+                "23505"
             ) {
 
                 return res
-                    .status(400)
-                    .json({
+                .status(400)
+                .json({
 
-                        erro:
-                            "Este código já existe."
+                    erro:
 
-                    });
+                        "Este código já existe."
+
+                });
 
             }
 
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao criar convidado."
+                erro:
+                    "Erro ao adicionar convidado."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// EDITAR CONVIDADO
-// =========================================
+/* =========================================
+EDITAR CONVIDADO
+========================================= */
 
 app.put(
     "/api/admin/convidados/:codigo",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
             const {
+
                 nome,
                 pessoas
+
             } = req.body;
 
 
@@ -679,44 +784,51 @@ app.put(
                 await pool.query(
 
                     `
+
                     UPDATE convidados
 
                     SET
+
                         nome = $1,
+
                         pessoas = $2
 
-                    WHERE codigo = $3
+                    WHERE UPPER(codigo) =
+                    UPPER($3)
 
-                    RETURNING *
                     `,
 
                     [
 
-                        (nome || "").trim(),
+                        (
+                            nome ||
+                            ""
+                        )
+                        .trim(),
 
-                        Number(pessoas),
+                        Number(
+                            pessoas
+                        ),
 
                         req.params.codigo
-                        .trim()
-                        .toUpperCase()
 
                     ]
 
                 );
 
 
-            if (
-                resultado.rows.length === 0
+            if(
+                resultado.rowCount === 0
             ) {
 
                 return res
-                    .status(404)
-                    .json({
+                .status(404)
+                .json({
 
-                        erro:
-                            "Convidado não encontrado."
+                    erro:
+                        "Convidado não encontrado."
 
-                    });
+                });
 
             }
 
@@ -729,36 +841,43 @@ app.put(
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao editar convidado."
+                erro:
+                    "Erro ao editar convidado."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// ELIMINAR CONVIDADO
-// =========================================
+/* =========================================
+ELIMINAR CONVIDADO
+========================================= */
 
 app.delete(
     "/api/admin/convidados/:codigo",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
@@ -766,36 +885,35 @@ app.delete(
                 await pool.query(
 
                     `
+
                     DELETE FROM convidados
 
-                    WHERE codigo = $1
+                    WHERE UPPER(codigo) =
+                    UPPER($1)
 
-                    RETURNING *
                     `,
 
                     [
 
                         req.params.codigo
-                        .trim()
-                        .toUpperCase()
 
                     ]
 
                 );
 
 
-            if (
-                resultado.rows.length === 0
+            if(
+                resultado.rowCount === 0
             ) {
 
                 return res
-                    .status(404)
-                    .json({
+                .status(404)
+                .json({
 
-                        erro:
-                            "Convidado não encontrado."
+                    erro:
+                        "Convidado não encontrado."
 
-                    });
+                });
 
             }
 
@@ -808,37 +926,43 @@ app.delete(
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao eliminar convidado."
+                erro:
+                    "Erro ao eliminar convidado."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// CONTROLO DE ENTRADA
-// TESTAR LOGIN
-// =========================================
+/* =========================================
+TESTE CONTROLO DE ENTRADA
+========================================= */
 
 app.get(
     "/api/entrada/test",
 
     auth,
 
-    (req, res) => {
+    (
+        req,
+        res
+    ) => {
 
         res.json({
 
@@ -847,35 +971,32 @@ app.get(
         });
 
     }
-
 );
 
 
-// =========================================
-// CONTROLO DE ENTRADA
-// CONSULTAR CONVIDADO
-// =========================================
+/* =========================================
+CONSULTAR CONVITE NA ENTRADA
+========================================= */
 
 app.get(
     "/api/entrada/consultar/:codigo",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
-
-            const codigo =
-                req.params.codigo
-                .trim()
-                .toUpperCase();
-
 
             const resultado =
                 await pool.query(
 
                     `
+
                     SELECT
+
                         codigo,
                         nome,
                         pessoas,
@@ -884,126 +1005,144 @@ app.get(
 
                     FROM convidados
 
-                    WHERE codigo = $1
+                    WHERE UPPER(codigo) =
+                    UPPER($1)
+
                     `,
 
-                    [codigo]
+                    [
+
+                        req.params.codigo
+
+                    ]
 
                 );
 
 
-            if (
+            if(
                 resultado.rows.length === 0
             ) {
 
                 return res
-                    .status(404)
-                    .json({
+                .status(404)
+                .json({
 
-                        erro:
-                            "Convite não encontrado."
+                    erro:
+                        "Convite não encontrado."
 
-                    });
+                });
 
             }
 
 
             res.json(
+
                 resultado.rows[0]
+
             );
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao consultar convite."
+                erro:
+                    "Erro ao consultar convite."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// CONTROLO DE ENTRADA
-// CONFIRMAR ENTRADA
-// =========================================
+/* =========================================
+CONFIRMAR ENTRADA
+========================================= */
 
 app.post(
     "/api/entrada/confirmar/:codigo",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
-            const codigo =
-                req.params.codigo
-                .trim()
-                .toUpperCase();
-
-
-            const consulta =
+            const resultado =
                 await pool.query(
 
                     `
+
                     SELECT *
+
                     FROM convidados
 
-                    WHERE codigo = $1
+                    WHERE UPPER(codigo) =
+                    UPPER($1)
+
                     `,
 
-                    [codigo]
+                    [
+
+                        req.params.codigo
+
+                    ]
 
                 );
 
 
-            if (
-                consulta.rows.length === 0
+            if(
+                resultado.rows.length === 0
             ) {
 
                 return res
-                    .status(404)
-                    .json({
+                .status(404)
+                .json({
 
-                        erro:
-                            "Convite inválido."
+                    erro:
+                        "Convite não encontrado."
 
-                    });
+                });
 
             }
 
 
             const convidado =
-                consulta.rows[0];
+                resultado.rows[0];
 
 
-            if (
+            if(
                 convidado.estado ===
                 "Utilizado"
             ) {
 
                 return res
-                    .status(409)
-                    .json({
+                .status(409)
+                .json({
 
-                        erro:
-                            "Este convite já foi utilizado.",
+                    erro:
 
+                        "Este convite já foi utilizado.",
+
+                    convidado:
                         convidado
 
-                    });
+                });
 
             }
 
@@ -1016,38 +1155,58 @@ app.post(
 
                     {
 
-                        dateStyle: "short",
+                        dateStyle:
+                            "short",
 
-                        timeStyle: "short"
+                        timeStyle:
+                            "short"
 
                     }
 
                 );
 
 
-            const resultado =
-                await pool.query(
+            await pool.query(
 
-                    `
-                    UPDATE convidados
+                `
 
-                    SET
+                UPDATE convidados
 
-                        estado = 'Utilizado',
+                SET
 
-                        usado_em = $1
+                    estado =
+                    'Utilizado',
 
-                    WHERE codigo = $2
+                    usado_em =
+                    $1
 
-                    RETURNING *
-                    `,
+                WHERE UPPER(codigo) =
+                UPPER($2)
 
-                    [
-                        agora,
-                        codigo
-                    ]
+                `,
 
-                );
+                [
+
+                    agora,
+
+                    req.params.codigo
+
+                ]
+
+            );
+
+
+            const convidadoAtualizado = {
+
+                ...convidado,
+
+                estado:
+                    "Utilizado",
+
+                usado_em:
+                    agora
+
+            };
 
 
             res.json({
@@ -1055,71 +1214,100 @@ app.post(
                 ok: true,
 
                 mensagem:
-                    "Entrada confirmada.",
+
+                    "Entrada confirmada com sucesso.",
 
                 convidado:
-                    resultado.rows[0]
+
+                    convidadoAtualizado
 
             });
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao confirmar entrada."
+                erro:
+                    "Erro ao confirmar entrada."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// REPOR CONVITE
-// =========================================
+/* =========================================
+REPOR CONVITE
+========================================= */
 
 app.post(
     "/api/admin/repor/:codigo",
 
     auth,
 
-    async (req, res) => {
+    async (
+        req,
+        res
+    ) => {
 
         try {
 
-            await pool.query(
+            const resultado =
+                await pool.query(
 
-                `
-                UPDATE convidados
+                    `
 
-                SET
+                    UPDATE convidados
 
-                    estado = 'Não utilizado',
+                    SET
 
-                    usado_em = NULL
+                        estado =
+                        'Não utilizado',
 
-                WHERE codigo = $1
-                `,
+                        usado_em =
+                        NULL
 
-                [
+                    WHERE UPPER(codigo) =
+                    UPPER($1)
 
-                    req.params.codigo
-                    .trim()
-                    .toUpperCase()
+                    `,
 
-                ]
+                    [
 
-            );
+                        req.params.codigo
+
+                    ]
+
+                );
+
+
+            if(
+                resultado.rowCount === 0
+            ) {
+
+                return res
+                .status(404)
+                .json({
+
+                    erro:
+                        "Convidado não encontrado."
+
+                });
+
+            }
 
 
             res.json({
@@ -1130,76 +1318,53 @@ app.post(
 
         }
 
-        catch (e) {
+        catch(
+            erro
+        ) {
 
-            console.error(e);
+            console.error(
+                erro
+            );
+
 
             res
-                .status(500)
-                .json({
+            .status(500)
+            .json({
 
-                    erro:
-                        "Erro ao repor convite."
+                erro:
+                    "Erro ao repor convite."
 
-                });
+            });
 
         }
 
     }
-
 );
 
 
-// =========================================
-// INICIAR SERVIDOR
-// =========================================
+/* =========================================
+INICIAR SERVIDOR
+========================================= */
 
 iniciarBaseDados()
+.then(() => {
 
-    .then(() => {
+    app.listen(
 
-        app.listen(
+        PORT,
 
-            PORT,
+        () => {
 
-            () => {
+            console.log(
 
-                console.log(
-                    "================================"
-                );
+                "Sistema disponível em: " +
 
-                console.log(
-                    "Sistema iniciado."
-                );
+                BASE_URL
 
-                console.log(
-                    "URL: " +
-                    BASE_URL
-                );
+            );
 
-                console.log(
-                    "Porta: " +
-                    PORT
-                );
+        }
 
-                console.log(
-                    "================================"
-                );
+    );
 
-            }
-
-        );
-
-    })
-
-    .catch((erro) => {
-
-        console.error(
-            "Erro ao ligar ao PostgreSQL:"
-        );
-
-        console.error(erro);
-
-        process.exit(1);
-
-    });
+});
