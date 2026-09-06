@@ -12,71 +12,64 @@ const BASE_URL =
     "https://convite-casamento-resh.onrender.com";
 
 
-// SENHA DO PAINEL ADMINISTRATIVO
+// =================================================
+// SENHAS
+// =================================================
 
 const ADMIN_PASSWORD =
     process.env.ADMIN_PASSWORD ||
     "CASAMENTO2026";
 
 
-// SENHA DO CONTROLO DE ENTRADA
-
 const ENTRADA_PASSWORD =
     process.env.ENTRADA_PASSWORD ||
     "ENTRADA2026";
 
 
+// =================================================
 // BASE DE DADOS
+// =================================================
 
 const db = new Database("convites.db");
 
 
 db.exec(`
-
 CREATE TABLE IF NOT EXISTS convidados(
-
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-
     codigo TEXT UNIQUE NOT NULL,
-
     nome TEXT NOT NULL,
-
     pessoas INTEGER NOT NULL DEFAULT 1,
-
     estado TEXT NOT NULL DEFAULT 'Não utilizado',
-
     usado_em TEXT,
-
     criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-
 )
-
 `);
 
 
+// =================================================
 // CONVIDADO DE TESTE
+// =================================================
 
-function seed(codigo, nome, pessoas){
+function seed(codigo, nome, pessoas) {
 
-    const existe =
-        db
+    const existe = db
         .prepare(
             "SELECT codigo FROM convidados WHERE codigo=?"
         )
         .get(codigo);
 
 
-    if(!existe){
+    if (!existe) {
 
         db
-        .prepare(
-            "INSERT INTO convidados(codigo,nome,pessoas) VALUES(?,?,?)"
-        )
-        .run(
-            codigo,
-            nome,
-            pessoas
-        );
+            .prepare(
+                "INSERT INTO convidados(codigo,nome,pessoas) VALUES(?,?,?)"
+            )
+            .run(
+                codigo,
+                nome,
+                pessoas
+            );
 
     }
 
@@ -90,92 +83,65 @@ seed(
 );
 
 
+// =================================================
 // CONFIGURAÇÃO
+// =================================================
 
-app.use(
-    express.json()
-);
+app.use(express.json());
 
 
 app.use(
     express.static(
-        path.join(
-            __dirname,
-            "public"
-        )
+        path.join(__dirname, "public")
     )
 );
 
 
+// =================================================
 // PÁGINA INICIAL
+// =================================================
 
-app.get(
-    "/",
+app.get("/", (req, res) => {
 
-    (req, res) => {
+    res.sendFile(
+        path.join(
+            __dirname,
+            "public",
+            "convite.html"
+        )
+    );
 
-        res.sendFile(
-
-            path.join(
-                __dirname,
-                "public",
-                "convite.html"
-            )
-
-        );
-
-    }
-
-);
+});
 
 
 // =================================================
 // AUTENTICAÇÃO ADMINISTRATIVA
 // =================================================
 
-function authAdmin(
-    req,
-    res,
-    next
-){
+function authAdmin(req, res, next) {
 
     const h =
-        req.headers.authorization ||
-        "";
+        req.headers.authorization || "";
 
 
-    if(
-        !h.startsWith("Basic ")
-    ){
-
-        res.set(
-            "WWW-Authenticate",
-            'Basic realm="Organização"'
-        );
-
+    if (!h.startsWith("Basic ")) {
 
         return res
-        .status(401)
-        .json({
-
-            erro:
-                "Autenticação necessária"
-
-        });
+            .status(401)
+            .json({
+                erro: "Autenticação necessária"
+            });
 
     }
 
 
     const dados =
         Buffer
-        .from(
-
-            h.slice(6),
-
-            "base64"
-
-        )
-        .toString();
+            .from(
+                h.slice(6),
+                "base64"
+            )
+            .toString();
 
 
     const partes =
@@ -186,18 +152,13 @@ function authAdmin(
         partes.slice(1).join(":");
 
 
-    if(
-        password !== ADMIN_PASSWORD
-    ){
+    if (password !== ADMIN_PASSWORD) {
 
         return res
-        .status(401)
-        .json({
-
-            erro:
-                "Senha inválida"
-
-        });
+            .status(401)
+            .json({
+                erro: "Senha inválida"
+            });
 
     }
 
@@ -211,43 +172,30 @@ function authAdmin(
 // AUTENTICAÇÃO CONTROLO DE ENTRADA
 // =================================================
 
-function authEntrada(
-    req,
-    res,
-    next
-){
+function authEntrada(req, res, next) {
 
     const h =
-        req.headers.authorization ||
-        "";
+        req.headers.authorization || "";
 
 
-    if(
-        !h.startsWith("Basic ")
-    ){
+    if (!h.startsWith("Basic ")) {
 
         return res
-        .status(401)
-        .json({
-
-            erro:
-                "Autenticação necessária"
-
-        });
+            .status(401)
+            .json({
+                erro: "Autenticação necessária"
+            });
 
     }
 
 
     const dados =
         Buffer
-        .from(
-
-            h.slice(6),
-
-            "base64"
-
-        )
-        .toString();
+            .from(
+                h.slice(6),
+                "base64"
+            )
+            .toString();
 
 
     const partes =
@@ -258,18 +206,13 @@ function authEntrada(
         partes.slice(1).join(":");
 
 
-    if(
-        password !== ENTRADA_PASSWORD
-    ){
+    if (password !== ENTRADA_PASSWORD) {
 
         return res
-        .status(401)
-        .json({
-
-            erro:
-                "Senha inválida"
-
-        });
+            .status(401)
+            .json({
+                erro: "Senha inválida"
+            });
 
     }
 
@@ -281,57 +224,48 @@ function authEntrada(
 
 // =================================================
 // CONSULTA PÚBLICA DO CONVITE
+// Esta rota é utilizada pelo convite.html
 // =================================================
 
 app.get(
-
     "/api/convite/:codigo",
 
     (req, res) => {
 
         const codigo =
             req.params.codigo
-            .trim()
-            .toUpperCase();
+                .trim()
+                .toUpperCase();
 
 
-        const x =
-            db
+        const convidado = db
             .prepare(`
-
                 SELECT
                     codigo,
                     nome,
                     pessoas,
                     estado,
                     usado_em
-
                 FROM convidados
-
                 WHERE codigo=?
-
             `)
             .get(codigo);
 
 
-        if(!x){
+        if (!convidado) {
 
             return res
-            .status(404)
-            .json({
-
-                erro:
-                    "Convite inválido"
-
-            });
+                .status(404)
+                .json({
+                    erro: "Convite inválido"
+                });
 
         }
 
 
-        res.json(x);
+        res.json(convidado);
 
     }
-
 );
 
 
@@ -340,66 +274,66 @@ app.get(
 // =================================================
 
 app.get(
-
     "/qr/:codigo",
 
-    async(req, res) => {
+    async (req, res) => {
 
-        const codigo =
-            req.params.codigo
-            .trim()
-            .toUpperCase();
+        try {
 
-
-        const x =
-            db
-            .prepare(
-
-                "SELECT codigo FROM convidados WHERE codigo=?"
-
-            )
-            .get(codigo);
+            const codigo =
+                req.params.codigo
+                    .trim()
+                    .toUpperCase();
 
 
-        if(!x){
+            const convidado = db
+                .prepare(
+                    "SELECT codigo FROM convidados WHERE codigo=?"
+                )
+                .get(codigo);
 
-            return res
-            .status(404)
-            .send(
-                "Não encontrado"
-            );
+
+            if (!convidado) {
+
+                return res
+                    .status(404)
+                    .send("Não encontrado");
+
+            }
+
+
+            const url =
+                `${BASE_URL}/convite.html?codigo=${encodeURIComponent(codigo)}`;
+
+
+            const qr =
+                await QRCode.toBuffer(
+                    url,
+                    {
+                        width: 700,
+                        margin: 2,
+                        errorCorrectionLevel: "H"
+                    }
+                );
+
+
+            res
+                .type("png")
+                .send(qr);
 
         }
 
+        catch (erro) {
 
-        const url =
-            `${BASE_URL}/convite.html?codigo=${encodeURIComponent(codigo)}`;
+            console.error(erro);
 
+            res
+                .status(500)
+                .send("Erro ao gerar QR Code");
 
-        const qr =
-            await QRCode.toBuffer(
-
-                url,
-
-                {
-
-                    width:700,
-
-                    margin:2,
-
-                    errorCorrectionLevel:"H"
-
-                }
-
-            );
-
-
-        res
-        .type("png")
-        .send(qr);
+        }
 
     }
-
 );
 
 
@@ -411,7 +345,6 @@ app.get(
 // TESTAR LOGIN
 
 app.get(
-
     "/api/entrada/test",
 
     authEntrada,
@@ -419,20 +352,19 @@ app.get(
     (req, res) => {
 
         res.json({
-
-            ok:true
-
+            ok: true
         });
 
     }
-
 );
 
 
+// =================================================
 // CONSULTAR CONVIDADO
+// Esta é a rota utilizada pelo entrada.html
+// =================================================
 
 app.get(
-
     "/api/entrada/consultar/:codigo",
 
     authEntrada,
@@ -441,39 +373,37 @@ app.get(
 
         const codigo =
             req.params.codigo
-            .trim()
-            .toUpperCase();
+                .trim()
+                .toUpperCase();
 
 
-        const convidado =
-            db
+        console.log(
+            "Consulta de entrada:",
+            codigo
+        );
+
+
+        const convidado = db
             .prepare(`
-
                 SELECT
                     codigo,
                     nome,
                     pessoas,
                     estado,
                     usado_em
-
                 FROM convidados
-
                 WHERE codigo=?
-
             `)
             .get(codigo);
 
 
-        if(!convidado){
+        if (!convidado) {
 
             return res
-            .status(404)
-            .json({
-
-                erro:
-                    "Convite não encontrado."
-
-            });
+                .status(404)
+                .json({
+                    erro: "Convite não encontrado."
+                });
 
         }
 
@@ -481,14 +411,14 @@ app.get(
         res.json(convidado);
 
     }
-
 );
 
 
+// =================================================
 // CONFIRMAR ENTRADA
+// =================================================
 
 app.post(
-
     "/api/entrada/confirmar/:codigo",
 
     authEntrada,
@@ -497,117 +427,79 @@ app.post(
 
         const codigo =
             req.params.codigo
-            .trim()
-            .toUpperCase();
+                .trim()
+                .toUpperCase();
 
 
-        const convidado =
-            db
+        const convidado = db
             .prepare(
-
                 "SELECT * FROM convidados WHERE codigo=?"
-
             )
             .get(codigo);
 
 
-        if(!convidado){
+        if (!convidado) {
 
             return res
-            .status(404)
-            .json({
-
-                erro:
-                    "Convite inválido."
-
-            });
+                .status(404)
+                .json({
+                    erro: "Convite inválido."
+                });
 
         }
 
 
-        if(
-            convidado.estado ===
-            "Utilizado"
-        ){
+        if (convidado.estado === "Utilizado") {
 
             return res
-            .status(409)
-            .json({
-
-                erro:
-                    "Este convite já foi utilizado.",
-
-                convidado
-
-            });
+                .status(409)
+                .json({
+                    erro: "Este convite já foi utilizado.",
+                    convidado
+                });
 
         }
 
 
         const agora =
             new Date()
-            .toLocaleString(
-
-                "pt-PT",
-
-                {
-
-                    dateStyle:"short",
-
-                    timeStyle:"short"
-
-                }
-
-            );
+                .toLocaleString(
+                    "pt-PT",
+                    {
+                        dateStyle: "short",
+                        timeStyle: "short"
+                    }
+                );
 
 
         db
-        .prepare(`
-
-            UPDATE convidados
-
-            SET
-
-                estado='Utilizado',
-
-                usado_em=?
-
-            WHERE codigo=?
-
-        `)
-        .run(
-
-            agora,
-
-            codigo
-
-        );
+            .prepare(`
+                UPDATE convidados
+                SET
+                    estado='Utilizado',
+                    usado_em=?
+                WHERE codigo=?
+            `)
+            .run(
+                agora,
+                codigo
+            );
 
 
-        const atualizado =
-            db
+        const atualizado = db
             .prepare(
-
                 "SELECT * FROM convidados WHERE codigo=?"
-
             )
             .get(codigo);
 
 
         res.json({
-
-            ok:true,
-
-            mensagem:
-                "Entrada confirmada com sucesso.",
-
-            convidado:
-                atualizado
-
+            ok: true,
+            mensagem: "Entrada confirmada com sucesso.",
+            convidado: atualizado
         });
 
     }
-
 );
 
 
@@ -619,7 +511,6 @@ app.post(
 // TESTAR LOGIN ADMIN
 
 app.get(
-
     "/api/admin/test",
 
     authAdmin,
@@ -627,20 +518,18 @@ app.get(
     (req, res) => {
 
         res.json({
-
-            ok:true
-
+            ok: true
         });
 
     }
-
 );
 
 
+// =================================================
 // RESUMO
+// =================================================
 
 app.get(
-
     "/api/admin/resumo",
 
     authAdmin,
@@ -649,54 +538,42 @@ app.get(
 
         const totalConvites =
             db
-            .prepare(
-
-                "SELECT COUNT(*) AS n FROM convidados"
-
-            )
-            .get()
-            .n;
+                .prepare(
+                    "SELECT COUNT(*) AS n FROM convidados"
+                )
+                .get()
+                .n;
 
 
         const pessoasAutorizadas =
             db
-            .prepare(
-
-                "SELECT COALESCE(SUM(pessoas),0) AS n FROM convidados"
-
-            )
-            .get()
-            .n;
+                .prepare(
+                    "SELECT COALESCE(SUM(pessoas),0) AS n FROM convidados"
+                )
+                .get()
+                .n;
 
 
         const convitesUtilizados =
             db
-            .prepare(`
-
-                SELECT COUNT(*) AS n
-
-                FROM convidados
-
-                WHERE estado='Utilizado'
-
-            `)
-            .get()
-            .n;
+                .prepare(`
+                    SELECT COUNT(*) AS n
+                    FROM convidados
+                    WHERE estado='Utilizado'
+                `)
+                .get()
+                .n;
 
 
         const pessoasEntraram =
             db
-            .prepare(`
-
-                SELECT COALESCE(SUM(pessoas),0) AS n
-
-                FROM convidados
-
-                WHERE estado='Utilizado'
-
-            `)
-            .get()
-            .n;
+                .prepare(`
+                    SELECT COALESCE(SUM(pessoas),0) AS n
+                    FROM convidados
+                    WHERE estado='Utilizado'
+                `)
+                .get()
+                .n;
 
 
         const convitesPendentes =
@@ -732,14 +609,14 @@ app.get(
         });
 
     }
-
 );
 
 
+// =================================================
 // LISTAR CONVIDADOS
+// =================================================
 
 app.get(
-
     "/api/admin/convidados",
 
     authAdmin,
@@ -748,29 +625,25 @@ app.get(
 
         const convidados =
             db
-            .prepare(`
-
-                SELECT *
-
-                FROM convidados
-
-                ORDER BY id DESC
-
-            `)
-            .all();
+                .prepare(`
+                    SELECT *
+                    FROM convidados
+                    ORDER BY id DESC
+                `)
+                .all();
 
 
         res.json(convidados);
 
     }
-
 );
 
 
+// =================================================
 // ADICIONAR CONVIDADO
+// =================================================
 
 app.post(
-
     "/api/admin/convidados",
 
     authAdmin,
@@ -778,116 +651,87 @@ app.post(
     (req, res) => {
 
         let {
-
             codigo,
-
             nome,
-
             pessoas
-
         } = req.body;
 
 
         codigo =
             (codigo || "")
-            .trim()
-            .toUpperCase();
+                .trim()
+                .toUpperCase();
 
 
         nome =
             (nome || "")
-            .trim();
+                .trim();
 
 
         pessoas =
-            Number(
-                pessoas || 1
-            );
+            Number(pessoas || 1);
 
 
-        if(
-
+        if (
             !codigo ||
-
             !nome ||
-
             pessoas < 1
-
-        ){
+        ) {
 
             return res
-            .status(400)
-            .json({
-
-                erro:
-
-                    "Preencha código, nome e número de pessoas."
-
-            });
+                .status(400)
+                .json({
+                    erro:
+                        "Preencha código, nome e número de pessoas."
+                });
 
         }
 
 
-        try{
+        try {
 
             db
-            .prepare(`
-
-                INSERT INTO convidados(
-
+                .prepare(`
+                    INSERT INTO convidados(
+                        codigo,
+                        nome,
+                        pessoas
+                    )
+                    VALUES(?,?,?)
+                `)
+                .run(
                     codigo,
-
                     nome,
-
                     pessoas
-
-                )
-
-                VALUES(?,?,?)
-
-            `)
-            .run(
-
-                codigo,
-
-                nome,
-
-                pessoas
-
-            );
+                );
 
 
             res.json({
-
-                ok:true
-
+                ok: true
             });
 
         }
 
-        catch(e){
+        catch (e) {
 
             res
-            .status(400)
-            .json({
-
-                erro:
-
-                    "Este código já existe."
-
-            });
+                .status(400)
+                .json({
+                    erro:
+                        "Este código já existe."
+                });
 
         }
 
     }
-
 );
 
 
+// =================================================
 // EDITAR CONVIDADO
+// =================================================
 
 app.put(
-
     "/api/admin/convidados/:codigo",
 
     authAdmin,
@@ -895,98 +739,76 @@ app.put(
     (req, res) => {
 
         let {
-
             nome,
-
             pessoas
-
         } = req.body;
 
 
         nome =
             (nome || "")
-            .trim();
+                .trim();
 
 
         pessoas =
             Number(pessoas);
 
 
-        if(
-
+        if (
             !nome ||
-
             pessoas < 1
-
-        ){
+        ) {
 
             return res
-            .status(400)
-            .json({
-
-                erro:
-                    "Dados inválidos."
-
-            });
+                .status(400)
+                .json({
+                    erro:
+                        "Dados inválidos."
+                });
 
         }
 
 
         const r =
             db
-            .prepare(`
-
-                UPDATE convidados
-
-                SET
-
-                    nome=?,
-
-                    pessoas=?
-
-                WHERE codigo=?
-
-            `)
-            .run(
-
-                nome,
-
-                pessoas,
-
-                req.params.codigo
-
-            );
+                .prepare(`
+                    UPDATE convidados
+                    SET
+                        nome=?,
+                        pessoas=?
+                    WHERE codigo=?
+                `)
+                .run(
+                    nome,
+                    pessoas,
+                    req.params.codigo
+                );
 
 
-        if(!r.changes){
+        if (!r.changes) {
 
             return res
-            .status(404)
-            .json({
-
-                erro:
-                    "Não encontrado"
-
-            });
+                .status(404)
+                .json({
+                    erro:
+                        "Não encontrado"
+                });
 
         }
 
 
         res.json({
-
-            ok:true
-
+            ok: true
         });
 
     }
-
 );
 
 
+// =================================================
 // ELIMINAR CONVIDADO
+// =================================================
 
 app.delete(
-
     "/api/admin/convidados/:codigo",
 
     authAdmin,
@@ -995,47 +817,39 @@ app.delete(
 
         const r =
             db
-            .prepare(
-
-                "DELETE FROM convidados WHERE codigo=?"
-
-            )
-            .run(
-
-                req.params.codigo
-
-            );
+                .prepare(
+                    "DELETE FROM convidados WHERE codigo=?"
+                )
+                .run(
+                    req.params.codigo
+                );
 
 
-        if(!r.changes){
+        if (!r.changes) {
 
             return res
-            .status(404)
-            .json({
-
-                erro:
-                    "Não encontrado"
-
-            });
+                .status(404)
+                .json({
+                    erro:
+                        "Não encontrado"
+                });
 
         }
 
 
         res.json({
-
-            ok:true
-
+            ok: true
         });
 
     }
-
 );
 
 
+// =================================================
 // REPOR CONVITE
+// =================================================
 
 app.post(
-
     "/api/admin/repor/:codigo",
 
     authAdmin,
@@ -1044,48 +858,35 @@ app.post(
 
         const r =
             db
-            .prepare(`
-
-                UPDATE convidados
-
-                SET
-
-                    estado='Não utilizado',
-
-                    usado_em=NULL
-
-                WHERE codigo=?
-
-            `)
-            .run(
-
-                req.params.codigo
-
-            );
+                .prepare(`
+                    UPDATE convidados
+                    SET
+                        estado='Não utilizado',
+                        usado_em=NULL
+                    WHERE codigo=?
+                `)
+                .run(
+                    req.params.codigo
+                );
 
 
-        if(!r.changes){
+        if (!r.changes) {
 
             return res
-            .status(404)
-            .json({
-
-                erro:
-                    "Não encontrado"
-
-            });
+                .status(404)
+                .json({
+                    erro:
+                        "Não encontrado"
+                });
 
         }
 
 
         res.json({
-
-            ok:true
-
+            ok: true
         });
 
     }
-
 );
 
 
@@ -1094,19 +895,18 @@ app.post(
 // =================================================
 
 app.listen(
-
     PORT,
 
     () => {
 
         console.log(
-
-            "Sistema iniciado: " +
-
+            "Sistema iniciado em: " +
             BASE_URL
+        );
 
+        console.log(
+            "Controlo de entrada activo."
         );
 
     }
-
 );
