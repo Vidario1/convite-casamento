@@ -27,6 +27,9 @@ seed("VL2026-001","Valdemiro e Esposa",2);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname,"public")));
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "convite.html"));
+});
 
 function auth(req,res,next){
  const h=req.headers.authorization||"";
