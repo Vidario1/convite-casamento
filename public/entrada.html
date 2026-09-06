@@ -1,18 +1,27 @@
 <!doctype html>
 <html lang="pt">
+
 <head>
+
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+>
 
 <title>Controlo de Entrada</title>
 
-<link rel="stylesheet" href="/style.css">
+<link
+    rel="stylesheet"
+    href="/style.css"
+>
 
 <style>
 
 .resultado{
     display:none;
-    margin-top:20px;
+    margin-top:25px;
 }
 
 .resultado.show{
@@ -20,29 +29,33 @@
 }
 
 .info{
-    padding:12px;
-    margin:8px 0;
-    border-radius:6px;
+    padding:15px;
+    margin:10px 0;
+    border-radius:8px;
     background:#f4f4f4;
 }
 
 .info strong{
     display:inline-block;
-    min-width:170px;
+    min-width:190px;
 }
 
 .sucesso{
     margin-top:15px;
     padding:15px;
-    border-radius:6px;
+    border-radius:8px;
     font-weight:bold;
+    background:#dff5e8;
+    color:#1d6b42;
 }
 
 .erro{
     margin-top:15px;
     padding:15px;
-    border-radius:6px;
+    border-radius:8px;
     font-weight:bold;
+    background:#f8d7da;
+    color:#842029;
 }
 
 #camera{
@@ -54,7 +67,7 @@
 
 .botoes{
     display:flex;
-    gap:10px;
+    gap:15px;
     flex-wrap:wrap;
     margin-top:15px;
 }
@@ -63,14 +76,20 @@
 
 </head>
 
+
 <body>
+
 
 <header>
 
-    <h1>Controlo de Entrada</h1>
+    <h1>
+        Controlo de Entrada
+    </h1>
 
     <div class="sub">
+
         Casamento de Vidário António & Lucélia Moma
+
     </div>
 
 </header>
@@ -79,11 +98,19 @@
 <main>
 
 
-<!-- LOGIN -->
+<!-- =========================================
+LOGIN
+========================================= -->
 
-<div class="card" id="login">
+<div
+    class="card"
+    id="login"
+>
 
-    <h2>Acesso ao Controlo de Entrada</h2>
+    <h2>
+        Acesso ao Controlo de Entrada
+    </h2>
+
 
     <input
         id="senha"
@@ -91,165 +118,242 @@
         placeholder="Digite a senha de entrada"
     >
 
-    <button onclick="entrar()">
+
+    <button
+        onclick="entrar()"
+    >
+
         Entrar
+
     </button>
 
-    <p id="erroLogin" class="used"></p>
+
+    <div
+        id="erroLogin"
+    ></div>
 
 </div>
 
 
-<!-- APLICAÇÃO -->
+<!-- =========================================
+APLICAÇÃO
+========================================= -->
 
-<div id="app" style="display:none">
+<div
+    id="app"
+    style="display:none"
+>
 
 
 <div class="card">
 
-    <h2>Consultar Convidado</h2>
 
-    <p>
-        Digite o código do convite ou utilize a câmara para ler o QR Code.
-    </p>
-
-
-    <div class="formgrid">
-
-        <label>
-
-            Código do convite
-
-            <input
-                id="codigo"
-                placeholder="Exemplo: VL2026-001"
-                onkeydown="if(event.key==='Enter')consultar()"
-            >
-
-        </label>
+<h2>
+    Consultar Convidado
+</h2>
 
 
-        <button onclick="consultar()">
-            Consultar
-        </button>
+<p>
 
-    </div>
+    Digite o código do convite ou utilize a câmara para ler o QR Code.
 
-
-    <div class="botoes">
-
-        <button
-            class="secondary"
-            onclick="abrirCamera()"
-        >
-            Abrir Câmara
-        </button>
+</p>
 
 
-        <button
-            class="secondary"
-            onclick="fecharCamera()"
-        >
-            Fechar Câmara
-        </button>
-
-    </div>
+<div class="formgrid">
 
 
-    <div id="camArea" style="display:none">
+<label>
 
-        <video
-            id="camera"
-            autoplay
-            playsinline
-        ></video>
+    Código do convite
 
-        <p id="camMsg"></p>
-
-    </div>
-
-
-    <!-- RESULTADO -->
-
-    <div
-        id="resultado"
-        class="resultado"
+    <input
+        id="codigo"
+        placeholder="Exemplo: VL2026-001"
+        onkeydown="if(event.key==='Enter') consultar()"
     >
 
-        <h2>Informações do Convite</h2>
+</label>
 
 
-        <div class="info">
+<button
+    type="button"
+    onclick="consultar()"
+>
 
-            <strong>Código:</strong>
+    Consultar
 
-            <span id="rCodigo"></span>
-
-        </div>
-
-
-        <div class="info">
-
-            <strong>Nome:</strong>
-
-            <span id="rNome"></span>
-
-        </div>
+</button>
 
 
-        <div class="info">
-
-            <strong>Pessoas autorizadas:</strong>
-
-            <span id="rPessoas"></span>
-
-        </div>
+</div>
 
 
-        <div class="info">
-
-            <strong>Estado:</strong>
-
-            <span id="rEstado"></span>
-
-        </div>
+<div class="botoes">
 
 
-        <div
-            class="info"
-            id="linhaData"
-            style="display:none"
-        >
+<button
+    type="button"
+    class="secondary"
+    onclick="abrirCamera()"
+>
 
-            <strong>Data/Hora da entrada:</strong>
+    Abrir Câmara
 
-            <span id="rData"></span>
-
-        </div>
+</button>
 
 
-        <button
-            id="btnConfirmar"
-            class="green"
-            onclick="confirmarEntrada()"
-        >
+<button
+    type="button"
+    class="secondary"
+    onclick="fecharCamera()"
+>
 
-            Confirmar Entrada
+    Fechar Câmara
 
-        </button>
-
-
-        <div
-            id="mensagem"
-        ></div>
+</button>
 
 
-    </div>
+</div>
+
+
+<!-- MENSAGENS GERAIS -->
+
+<div
+    id="mensagem"
+></div>
+
+
+<!-- CÂMARA -->
+
+<div
+    id="camArea"
+    style="display:none"
+>
+
+
+<video
+    id="camera"
+    autoplay
+    playsinline
+></video>
+
+
+<p
+    id="camMsg"
+></p>
+
+
+</div>
+
+
+<!-- =========================================
+RESULTADO
+========================================= -->
+
+<div
+    id="resultado"
+    class="resultado"
+>
+
+
+<h2>
+    Informações do Convite
+</h2>
+
+
+<div class="info">
+
+    <strong>
+        Código:
+    </strong>
+
+    <span
+        id="rCodigo"
+    ></span>
+
+</div>
+
+
+<div class="info">
+
+    <strong>
+        Nome:
+    </strong>
+
+    <span
+        id="rNome"
+    ></span>
+
+</div>
+
+
+<div class="info">
+
+    <strong>
+        Pessoas autorizadas:
+    </strong>
+
+    <span
+        id="rPessoas"
+    ></span>
+
+</div>
+
+
+<div class="info">
+
+    <strong>
+        Estado:
+    </strong>
+
+    <span
+        id="rEstado"
+    ></span>
+
+</div>
+
+
+<div
+    class="info"
+    id="linhaData"
+    style="display:none"
+>
+
+
+<strong>
+    Data/Hora da entrada:
+</strong>
+
+
+<span
+    id="rData"
+></span>
+
+
+</div>
+
+
+<button
+    id="btnConfirmar"
+    type="button"
+    class="green"
+    onclick="confirmarEntrada()"
+>
+
+    Confirmar Entrada
+
+</button>
+
 
 </div>
 
 
 </div>
+
+
+</div>
+
 
 </main>
 
@@ -258,7 +362,7 @@
 
 
 /* =========================================
-   VARIÁVEIS
+VARIÁVEIS
 ========================================= */
 
 let senha = "";
@@ -271,24 +375,20 @@ let scanTimer = null;
 
 
 /* =========================================
-   AUTENTICAÇÃO
+AUTENTICAÇÃO
 ========================================= */
 
 function auth(){
 
     return {
 
-        Authorization:
+        "Authorization":
 
             "Basic " +
 
             btoa(
                 "entrada:" + senha
-            ),
-
-        "Content-Type":
-
-            "application/json"
+            )
 
     };
 
@@ -296,68 +396,117 @@ function auth(){
 
 
 /* =========================================
-   LOGIN
+LOGIN
 ========================================= */
 
 async function entrar(){
 
-    senha =
+    const erroLogin =
+        document.getElementById("erroLogin");
 
+
+    erroLogin.innerHTML = "";
+
+
+    senha =
         document
         .getElementById("senha")
-        .value;
+        .value
+        .trim();
 
 
-    let r =
+    if(!senha){
 
-        await fetch(
+        erroLogin.innerHTML = `
 
-            "/api/entrada/test",
+            <div class="erro">
 
-            {
-                headers:auth()
-            }
+                Digite a senha.
 
-        );
+            </div>
 
-
-    if(!r.ok){
-
-        document
-        .getElementById("erroLogin")
-        .textContent =
-
-            "Senha inválida.";
+        `;
 
         return;
 
     }
 
 
-    document
-    .getElementById("login")
-    .style.display =
-
-        "none";
+    try{
 
 
-    document
-    .getElementById("app")
-    .style.display =
+        const r =
+            await fetch(
 
-        "block";
+                "/api/entrada/test",
+
+                {
+                    headers: auth()
+                }
+
+            );
+
+
+        const j =
+            await r.json();
+
+
+        if(!r.ok){
+
+            erroLogin.innerHTML = `
+
+                <div class="erro">
+
+                    ${j.erro || "Senha inválida."}
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        document
+        .getElementById("login")
+        .style.display =
+            "none";
+
+
+        document
+        .getElementById("app")
+        .style.display =
+            "block";
+
+
+    }
+
+    catch(e){
+
+        erroLogin.innerHTML = `
+
+            <div class="erro">
+
+                Não foi possível ligar ao servidor.
+
+            </div>
+
+        `;
+
+        console.error(e);
+
+    }
 
 }
 
 
 /* =========================================
-   API
+API
 ========================================= */
 
-async function api(
-    url,
-    opt={}
-){
+async function api(url, opt = {}){
+
 
     opt.headers = {
 
@@ -368,7 +517,7 @@ async function api(
     };
 
 
-    return fetch(
+    return await fetch(
         url,
         opt
     );
@@ -377,16 +526,21 @@ async function api(
 
 
 /* =========================================
-   CONSULTAR
+CONSULTAR
 ========================================= */
 
 async function consultar(){
 
+
     limparMensagem();
 
 
-    const codigo =
+    const resultado =
+        document
+        .getElementById("resultado");
 
+
+    const codigo =
         document
         .getElementById("codigo")
         .value
@@ -394,7 +548,18 @@ async function consultar(){
         .toUpperCase();
 
 
+    console.log(
+        "A consultar código:",
+        codigo
+    );
+
+
     if(!codigo){
+
+        resultado
+        .classList
+        .remove("show");
+
 
         mostrarErro(
             "Digite o código do convite."
@@ -405,52 +570,119 @@ async function consultar(){
     }
 
 
-    const r =
+    try{
 
-        await api(
 
+        const url =
             "/api/entrada/consultar/" +
 
-            encodeURIComponent(codigo)
+            encodeURIComponent(codigo);
 
+
+        console.log(
+            "URL:",
+            url
         );
 
 
-    const j =
-        await r.json();
+        const r =
+            await api(url);
 
 
-    if(!r.ok){
+        console.log(
+            "Status:",
+            r.status
+        );
 
-        document
-        .getElementById("resultado")
+
+        let j;
+
+
+        try{
+
+            j =
+                await r.json();
+
+        }
+
+        catch(e){
+
+            throw new Error(
+                "O servidor não devolveu uma resposta válida."
+            );
+
+        }
+
+
+        console.log(
+            "Resposta:",
+            j
+        );
+
+
+        if(!r.ok){
+
+
+            resultado
+            .classList
+            .remove("show");
+
+
+            mostrarErro(
+
+                j.erro ||
+
+                "Convite não encontrado."
+
+            );
+
+            return;
+
+        }
+
+
+        convidadoAtual = j;
+
+
+        mostrarConvidado(j);
+
+
+    }
+
+    catch(e){
+
+
+        console.error(
+            "Erro na consulta:",
+            e
+        );
+
+
+        resultado
         .classList
         .remove("show");
 
 
         mostrarErro(
-            j.erro ||
-            "Convite não encontrado."
+
+            "Erro ao consultar o convite. Verifique a ligação ao servidor."
+
         );
 
-        return;
-
     }
-
-
-    convidadoAtual = j;
-
-
-    mostrarConvidado(j);
 
 }
 
 
 /* =========================================
-   MOSTRAR CONVIDADO
+MOSTRAR CONVIDADO
 ========================================= */
 
 function mostrarConvidado(x){
+
+
+    limparMensagem();
+
 
     document
     .getElementById("resultado")
@@ -461,40 +693,38 @@ function mostrarConvidado(x){
     document
     .getElementById("rCodigo")
     .textContent =
-
-        x.codigo;
+        x.codigo || "";
 
 
     document
     .getElementById("rNome")
     .textContent =
-
-        x.nome;
+        x.nome || "";
 
 
     document
     .getElementById("rPessoas")
     .textContent =
-
-        x.pessoas;
+        x.pessoas || "";
 
 
     document
     .getElementById("rEstado")
     .textContent =
-
-        x.estado;
+        x.estado || "";
 
 
     const linhaData =
-
         document
         .getElementById("linhaData");
 
 
     if(x.usado_em){
 
-        linhaData.style.display =
+
+        linhaData
+        .style
+        .display =
             "block";
 
 
@@ -503,18 +733,22 @@ function mostrarConvidado(x){
         .textContent =
             x.usado_em;
 
+
     }
 
     else{
 
-        linhaData.style.display =
+
+        linhaData
+        .style
+        .display =
             "none";
+
 
     }
 
 
     const botao =
-
         document
         .getElementById("btnConfirmar");
 
@@ -523,7 +757,10 @@ function mostrarConvidado(x){
         x.estado === "Utilizado"
     ){
 
-        botao.style.display =
+
+        botao
+        .style
+        .display =
             "none";
 
 
@@ -531,12 +768,17 @@ function mostrarConvidado(x){
             "Este convite já foi utilizado."
         );
 
+
     }
 
     else{
 
-        botao.style.display =
+
+        botao
+        .style
+        .display =
             "inline-block";
+
 
     }
 
@@ -544,10 +786,11 @@ function mostrarConvidado(x){
 
 
 /* =========================================
-   CONFIRMAR ENTRADA
+CONFIRMAR ENTRADA
 ========================================= */
 
 async function confirmarEntrada(){
+
 
     if(!convidadoAtual){
 
@@ -560,8 +803,21 @@ async function confirmarEntrada(){
     }
 
 
-    const confirmar =
+    if(
+        convidadoAtual.estado ===
+        "Utilizado"
+    ){
 
+        mostrarErro(
+            "Este convite já foi utilizado."
+        );
+
+        return;
+
+    }
+
+
+    const confirmar =
         confirm(
 
             "Confirmar entrada de " +
@@ -577,126 +833,167 @@ async function confirmarEntrada(){
         );
 
 
-    if(!confirmar)
-        return;
-
-
-    const r =
-
-        await api(
-
-            "/api/entrada/confirmar/" +
-
-            encodeURIComponent(
-                convidadoAtual.codigo
-            ),
-
-            {
-                method:"POST"
-            }
-
-        );
-
-
-    const j =
-        await r.json();
-
-
-    if(!r.ok){
-
-        mostrarErro(
-            j.erro ||
-            "Não foi possível confirmar a entrada."
-        );
+    if(!confirmar){
 
         return;
 
     }
 
 
-    convidadoAtual =
-        j.convidado;
+    try{
 
 
-    mostrarConvidado(
-        convidadoAtual
-    );
+        const r =
+            await api(
+
+                "/api/entrada/confirmar/" +
+
+                encodeURIComponent(
+                    convidadoAtual.codigo
+                ),
+
+                {
+                    method:"POST"
+                }
+
+            );
 
 
-    mostrarSucesso(
-        "Entrada confirmada com sucesso."
-    );
+        const j =
+            await r.json();
 
 
-    document
-    .getElementById("codigo")
-    .value = "";
+        if(!r.ok){
+
+            mostrarErro(
+
+                j.erro ||
+
+                "Não foi possível confirmar a entrada."
+
+            );
+
+            return;
+
+        }
+
+
+        convidadoAtual =
+            j.convidado;
+
+
+        mostrarConvidado(
+            convidadoAtual
+        );
+
+
+        mostrarSucesso(
+            "Entrada confirmada com sucesso."
+        );
+
+
+        document
+        .getElementById("codigo")
+        .value =
+            "";
+
+
+    }
+
+    catch(e){
+
+        console.error(e);
+
+
+        mostrarErro(
+
+            "Erro ao confirmar a entrada."
+
+        );
+
+    }
 
 }
 
 
 /* =========================================
-   MENSAGENS
+MENSAGENS
 ========================================= */
 
 function limparMensagem(){
 
+
     document
     .getElementById("mensagem")
-    .innerHTML = "";
+    .innerHTML =
+        "";
+
 
 }
 
 
 function mostrarErro(texto){
 
+
     document
     .getElementById("mensagem")
     .innerHTML =
 
-        `<div class="erro">
+        `
+
+        <div class="erro">
 
             ${texto}
 
-        </div>`;
+        </div>
+
+        `;
+
 
 }
 
 
 function mostrarSucesso(texto){
 
+
     document
     .getElementById("mensagem")
     .innerHTML =
 
-        `<div class="sucesso">
+        `
+
+        <div class="sucesso">
 
             ${texto}
 
-        </div>`;
+        </div>
+
+        `;
+
 
 }
 
 
 /* =========================================
-   CÂMARA
+ABRIR CÂMARA
 ========================================= */
 
 async function abrirCamera(){
 
-    const camArea =
 
+    const camArea =
         document
         .getElementById("camArea");
 
 
     const camMsg =
-
         document
         .getElementById("camMsg");
 
 
-    camArea.style.display =
+    camArea
+    .style
+    .display =
         "block";
 
 
@@ -712,6 +1009,7 @@ async function abrirCamera(){
 
     ){
 
+
         camMsg.textContent =
 
             "O seu navegador não suporta leitura automática de QR Code. Digite o código manualmente.";
@@ -723,8 +1021,8 @@ async function abrirCamera(){
 
     try{
 
-        stream =
 
+        stream =
             await navigator
             .mediaDevices
             .getUserMedia({
@@ -739,15 +1037,16 @@ async function abrirCamera(){
             });
 
 
-        document
-        .getElementById("camera")
-        .srcObject =
+        const camera =
+            document
+            .getElementById("camera");
 
+
+        camera.srcObject =
             stream;
 
 
         const detector =
-
             new BarcodeDetector({
 
                 formats:[
@@ -758,32 +1057,24 @@ async function abrirCamera(){
 
 
         scanTimer =
-
             setInterval(
 
-                async() => {
+                async () => {
+
 
                     try{
 
+
                         const codes =
-
-                            await detector
-                            .detect(
-
-                                document
-                                .getElementById(
-                                    "camera"
-                                )
-
+                            await detector.detect(
+                                camera
                             );
 
 
-                        if(
-                            codes.length
-                        ){
+                        if(codes.length){
+
 
                             const raw =
-
                                 codes[0]
                                 .rawValue;
 
@@ -794,28 +1085,23 @@ async function abrirCamera(){
 
                             try{
 
+
                                 const url =
-
                                     new URL(
-
                                         raw,
-
                                         location.origin
-
                                     );
 
 
                                 codigo =
-
                                     url
                                     .searchParams
-                                    .get(
-                                        "codigo"
-                                    )
+                                    .get("codigo")
 
                                     ||
 
                                     raw;
+
 
                             }
 
@@ -828,17 +1114,19 @@ async function abrirCamera(){
                             document
                             .getElementById("codigo")
                             .value =
-
                                 codigo;
 
 
                             consultar();
 
+
                         }
+
 
                     }
 
                     catch(e){}
+
 
                 },
 
@@ -846,9 +1134,14 @@ async function abrirCamera(){
 
             );
 
+
     }
 
     catch(e){
+
+
+        console.error(e);
+
 
         camMsg.textContent =
 
@@ -860,34 +1153,42 @@ async function abrirCamera(){
 
 
 /* =========================================
-   FECHAR CÂMARA
+FECHAR CÂMARA
 ========================================= */
 
 function fecharCamera(){
 
+
     if(scanTimer){
+
 
         clearInterval(
             scanTimer
         );
 
+
         scanTimer =
             null;
+
 
     }
 
 
     if(stream){
 
+
         stream
         .getTracks()
         .forEach(
+
             t => t.stop()
+
         );
 
 
         stream =
             null;
+
 
     }
 
@@ -897,10 +1198,13 @@ function fecharCamera(){
     .style.display =
         "none";
 
+
 }
 
 
 </script>
 
+
 </body>
+
 </html>
