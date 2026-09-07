@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 const BASE_URL =
     process.env.BASE_URL ||
-    `http://localhost:${PORT}`;
+    "https://convite-casamento-resh.onrender.com";
 
 const ADMIN_PASSWORD =
     process.env.ADMIN_PASSWORD ||
